@@ -14,7 +14,7 @@ struct Task {
 
 // linked list to hold tasks
 typedef struct List {
-    int cnt;
+    int count_num;
     Task* head;
     Task* top;
 }List;
