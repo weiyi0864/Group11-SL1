@@ -22,5 +22,15 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper);
 
 void add_a_new_task(List* list);
 Task* create_task(char* desc);
+void trim_backspace(char* str);
+int check_cancel(char* str);
+
+void finish_a_task(TaskManager* tm);
+Task* take_task_from_list(List* list, int index);
+void retrace_top(List* list);
 
 void push(List* list, Task* new_task);
+
+void delete_a_task(List* list);
+
+void update_a_task(List* list);

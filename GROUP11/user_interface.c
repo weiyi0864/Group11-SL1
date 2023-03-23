@@ -87,13 +87,13 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
             break;
         case 'b':
             // finish a task 
-            //finish_a_task(tm);
+            finish_a_task(tm);
             break;
         case 'c':
-            //delete_a_task(tm->unfinished);
+            delete_a_task(tm->unfinished);
             break;
         case 'd':
-            //update_a_task(tm->unfinished);
+            update_a_task(tm->unfinished);
             break;
         case 'e':
             // search a task
@@ -110,7 +110,7 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
         switch (op)
         {
         case 'a':
-            //delete_a_task(tm->finished);
+            delete_a_task(tm->finished);
             break;
         case 'b':
             //search_a_task(tm->finished);
@@ -188,8 +188,21 @@ void manage_task_list(int state, TaskManager* tm) {
 
 void add_a_new_task(List* list)
 {
-    printf("Please\n");
-    char desc[MAXCHAR] = "my new task description\n";
+    printf("Please enter description for the task(no more than 50 characters).Enter \'q\' to cancel this action.\n");
+    char desc[MAXCHAR];
+    while (fgets(desc, MAXCHAR, stdin) != NULL) {
+        int len = strlen(desc);
+        if (desc[len - 1] == '\n' && len != 1) {
+            break;
+        }
+    }
+    // 
+    trim_backspace(desc);
+    // check cancel 
+    if (check_cancel(desc)) {
+        return;
+    }
+    //create task
     Task* new_task = create_task(desc);
     push(list, new_task);
     printf("Successfully added the new task.\n");
@@ -214,3 +227,121 @@ void push(List* list, Task* new_task) {
     list->count_num++;
 
 }
+
+void finish_a_task(TaskManager* tm) {
+    // get the index you want to finish 
+    printf("Please enter the index number the task you want to finish\n");
+    int index_num;
+    scanf("%d", &index_num);
+    if (index_num > tm->unfinished->count_num || index_num <= 0) {
+        printf("Invalid Index\n");
+        printf("-----------------------------------------------------------------------------------------------------------------\n");
+        return NULL;
+    }
+    Task* finish = take_task_from_list(tm->unfinished, index_num);
+   
+    if (finish != NULL) {
+        push(tm->finished, finish);
+        printf("Congratulations! You have just finished a task\n");
+    }
+    printf("-----------------------------------------------------------------------------------------------------------------\n");
+}
+
+Task* take_task_from_list(List* list, int index) {
+    Task* previous_task = list->head;
+    // find the task before the task to be deleted
+    while (index > 1) {
+        previous_task = previous_task->next;
+        index--;
+    }
+    Task* target_task = previous_task->next;
+    Task* next_task = previous_task->next->next;
+    previous_task->next = next_task;
+    list->count_num--;
+    target_task->next = NULL;
+    retrace_top(list);
+    return target_task;
+}
+
+void retrace_top(List* list) {
+    Task* cur = list->head;
+    while (cur->next != NULL) {
+        cur = cur->next;
+    }
+    list->top = cur;
+}
+
+
+void delete_a_task(List* list) {
+     printf("Please enter the index number the task you wanted to delete\n");
+     int index_num;
+     scanf("%d", &index_num);
+     
+     //validation
+     if (index_num > list->count_num || index_num <= 0) {
+         printf("Invalid Index\n");
+         return 1;
+     }
+
+     //delete
+     Task* previous_task = list->head;
+     while (index_num > 1) {
+         previous_task = previous_task->next;
+         index_num--;
+     }
+     Task* target_task = previous_task->next;
+     Task* next_task = previous_task->next->next;
+     previous_task->next = next_task;
+     list->count_num--;
+     free(target_task);
+     retrace_top(list);
+}
+
+void trim_backspace(char* str) {
+    int len = strlen(str);
+    if (str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+    }
+}
+
+int check_cancel(char* str) {
+    if (strlen(str) == 1 && str[0] == 'q') {
+        return 1;
+    }
+    return 0;
+}
+
+void update_a_task(List* list) {
+    printf("Please enter the index number the task you wanted to update\n");
+    int index_num;
+    scanf("%d", &index_num);
+
+    if (index_num > list->count_num || index_num <= 0) {
+        printf("Invalid Index\n");
+        return 1;
+    }
+
+    printf("Please enter description for the task ( no more than 50 characters ). Enter \'q\' to cancel this action.\n");
+    // read user input
+    char desc[MAXCHAR];
+    while (fgets(desc, MAXCHAR, stdin) != NULL) {
+        int len = strlen(desc);
+        if (desc[len - 1] == '\n' && len != 1) {
+            break;
+        }
+    }
+    //fgets(desc, MAXCHAR, stdin)
+    trim_backspace(desc);
+    // check cancel 
+    if (check_cancel(desc)) {
+        return;
+    }
+
+    //create task
+    Task* update_task = create_task(desc);
+    Task* deleted = take_task_from_list(list, index_num);
+    free(deleted);
+    push(list, update_task);
+}
+
+
