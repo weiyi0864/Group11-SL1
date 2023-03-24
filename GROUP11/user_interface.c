@@ -20,7 +20,7 @@ void print_menu() {
 
     printf("c) Finished task list \n");
 
-    printf("d) Quit\n");
+    printf("d) Quits\n");
 }
 
 void upper_menu_input(char op, int* quit_flag, TaskManager* tm) {
@@ -45,9 +45,9 @@ void upper_menu_input(char op, int* quit_flag, TaskManager* tm) {
     printf("-----------------------------------------------------------------------------------------------------------------\n");
 }
 
-void quit_program() {
-    //save_to_file(tm);
-    //destroy_task_manager(tm);
+void quit_program(TaskManager* tm) {
+    /*save_to_file(tm);
+    destroy_task_manager(tm);*/
 }
 
 void print_ongoing_menu() {
@@ -96,8 +96,8 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
             update_a_task(tm->unfinished);
             break;
         case 'e':
-            // search a task
-            //search_a_task(tm->unfinished);
+            //search a task
+            search_a_task(tm->unfinished);
             break;
         case 'f':
             *back_to_upper = 1;
@@ -113,7 +113,7 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
             delete_a_task(tm->finished);
             break;
         case 'b':
-            //search_a_task(tm->finished);
+            search_a_task(tm->finished);
             break;
         case 'c':
             *back_to_upper = 1;
@@ -124,8 +124,16 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
     }
 }
 
-//init from empty
 TaskManager* init() {
+    TaskManager* tm = init_task_manager();
+
+   
+    return tm;
+}
+
+
+//init from empty
+TaskManager* init_task_manager() {
     TaskManager* manager = (TaskManager*)malloc(sizeof(TaskManager));
     manager->finished = init_list();
     manager->unfinished = init_list();
@@ -138,8 +146,11 @@ List* init_list() {
     Task* dummy_node = (Task*)malloc(sizeof(Task));
     l->head = dummy_node;
     l->top = dummy_node;
+    dummy_node->next = NULL;
     return l;
 }
+
+
 
 void display_all_lists(TaskManager* tm) {
     printf("Ongoing Task List\n");
@@ -344,4 +355,61 @@ void update_a_task(List* list) {
     push(list, update_task);
 }
 
+void search_a_task(List* list) {
+    printf("Please enter keyword to search a task. Enter \'q\' to cancel this action.\n");
+    // read user input
+    char desc[MAXCHAR];
+    while (fgets(desc, MAXCHAR, stdin) != NULL) {
+        int len = strlen(desc);
+        if (desc[len - 1] == '\n' && len != 1) {
+            break;
+        }
+    }
+    //fgets(desc, MAXCHAR, stdin)
+    trim_backspace(desc);
+    // check cancel 
+    if (check_cancel(desc)) {
+        return;
+    }
+    Task* target = search_the_task(list, desc);
+    if (target == NULL) {
+        printf("Sorry, the task you searched is not in the list\n");
+    }
+    else {
+        print_task(target);
+    }
+    printf("-----------------------------------------------------------------------------------------------------------------\n");
+}
+
+Task* search_the_task(List* list, char* keyword) {
+    if (empty(list)) {
+        printf("Can not search empty list\n");
+        return NULL;
+    }
+    Task* cur = list->head;
+    while (cur != NULL) {
+        char* ret = strstr(cur->desc, keyword);
+        if (ret != NULL) {
+            // search hit
+            return cur;
+        }
+        cur = cur->next;
+    }
+    // search failed 
+    return NULL;
+    
+}
+
+int empty(List* list) {
+    if (list->top == list->head) {
+        return 1;
+    }
+    return 0;
+}
+
+void print_task(Task* task) {
+    printf("###########################\n");
+    printf("%s\n", task->desc);
+    printf("###########################\n");
+}
 

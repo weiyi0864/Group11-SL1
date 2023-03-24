@@ -5,10 +5,14 @@ void print_greeting();
 void take_user_input(char* op);
 void print_menu();
 void upper_menu_input(char op, int* quit_flag, TaskManager* tm);
-void quit_program();
+
+void quit_program(TaskManager* tm);
+
 
 TaskManager* init();
+TaskManager* init_task_manager();
 List* init_list();
+
 
 void display_all_lists(TaskManager* tm);
 void display_list(List* list);
@@ -34,3 +38,9 @@ void push(List* list, Task* new_task);
 void delete_a_task(List* list);
 
 void update_a_task(List* list);
+
+void search_a_task(List* list);
+Task* search_the_task(List* list, char* keyword);
+int empty(List* list);
+void print_task(Task* task);
+

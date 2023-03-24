@@ -14,7 +14,7 @@ int main()
         upper_menu_input(op, &quit_flag,tm);
         if (quit_flag)
         {
-            quit_program();
+            quit_program(tm);
             break;
         }
     }
