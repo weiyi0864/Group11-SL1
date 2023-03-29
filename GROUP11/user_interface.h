@@ -7,12 +7,15 @@ void print_menu();
 void upper_menu_input(char op, int* quit_flag, TaskManager* tm);
 
 void quit_program(TaskManager* tm);
-
+void destroy_task_manager(TaskManager* tm);
+void destroy_list(List* list);
 
 TaskManager* init();
 TaskManager* init_task_manager();
 List* init_list();
-
+int file_content_empty(FILE* fp);
+void read_from_file(TaskManager* tm);
+size_t getline(char** lineptr, size_t* n, FILE* stream);
 
 void display_all_lists(TaskManager* tm);
 void display_list(List* list);
@@ -44,3 +47,7 @@ Task* search_the_task(List* list, char* keyword);
 int empty(List* list);
 void print_task(Task* task);
 
+void save_to_file(TaskManager* tm);
+
+void get_multiple_line(char* target, char* prompt);
+int get_task_detail(char* title, char* desc);

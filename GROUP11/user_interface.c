@@ -2,7 +2,7 @@
 #include "user_interface.h"
 
 
-void print_greeting(){
+void print_greeting() {
     printf("Welcome to Task Manager Program\n");
 }
 
@@ -46,8 +46,8 @@ void upper_menu_input(char op, int* quit_flag, TaskManager* tm) {
 }
 
 void quit_program(TaskManager* tm) {
-    /*save_to_file(tm);
-    destroy_task_manager(tm);*/
+    save_to_file(tm);
+    destroy_task_manager(tm);
 }
 
 void print_ongoing_menu() {
@@ -127,7 +127,17 @@ void execute_function(int state, char op, TaskManager* tm, int* back_to_upper) {
 TaskManager* init() {
     TaskManager* tm = init_task_manager();
 
-   
+    FILE* fp = fopen("data.txt", "r");
+
+    if (fp == NULL || file_content_empty(fp))
+    {
+        // init from empty
+    }
+    else {
+        // init from file
+        read_from_file(tm);
+        fclose(fp);
+    }
     return tm;
 }
 
@@ -150,7 +160,92 @@ List* init_list() {
     return l;
 }
 
+int file_content_empty(FILE* fp)
+{
 
+    fseek(fp, 0, SEEK_END); // go to end of file
+    if (ftell(fp) == 0)
+    {
+        return 1;
+    }
+    fseek(fp, 0, SEEK_SET);
+    return 0;
+}
+
+void read_from_file(TaskManager* tm) {
+    FILE* fp = fopen("data.txt", "r");
+    char* line = NULL;
+    size_t len = 0;
+    size_t read;
+    List* list = tm->unfinished;
+    while ((read = getline(&line, &len, fp)) != -1) {
+        // printf("Retrieved line of length %zu:\n", read);
+        // printf("%s", line);
+        trim_backspace(line);
+        if (line[0] == '0') {
+            //printf("get unfinished\n");
+            continue;
+        }
+        if (line[0] == '1') {
+            //printf("get finished\n");
+            list = tm->finished;
+            continue;
+        }
+        Task* t = (Task*)malloc(sizeof(Task));
+        t->next = NULL;
+        // printf("%s\n", line);
+        strcpy(t->title, line);
+        read = getline(&line, &len, fp);
+        strcpy(t->desc, line);
+        push(list, t);
+    }
+    fclose(fp);
+}
+
+size_t getline(char** lineptr, size_t* n, FILE* stream) {
+    if (lineptr == NULL || n == NULL || stream == NULL) {
+        return -1;
+    }
+
+    size_t bufsize = *n;
+    int c = fgetc(stream);
+
+    if (c == EOF) {
+        return -1;
+    }
+
+    if (*lineptr == NULL) {
+        *lineptr = malloc(bufsize);
+        if (*lineptr == NULL) {
+            return -1;
+        }
+    }
+
+    size_t i = 0;
+    while (c != EOF) {
+        if (i >= bufsize - 1) {
+            bufsize *= 2;
+            char* new_ptr = realloc(*lineptr, bufsize);
+            if (new_ptr == NULL) {
+                return -1;
+            }
+            *lineptr = new_ptr;
+            *n = bufsize;
+        }
+
+        (*lineptr)[i] = c;
+        i++;
+
+        if (c == '\n') {
+            break;
+        }
+
+        c = fgetc(stream);
+    }
+
+    (*lineptr)[i] = '\0';
+    return i;
+}
 
 void display_all_lists(TaskManager* tm) {
     printf("Ongoing Task List\n");
@@ -167,7 +262,7 @@ void display_list(List* list) {
     Task* current_task = list->head->next;
     int counter = 1;
     while (current_task != NULL) {
-        printf("%d. %s\n",counter, current_task->desc);
+        printf("%d. %s\n", counter, current_task->title);
         current_task = current_task->next;
         counter++;
     }
@@ -197,33 +292,59 @@ void manage_task_list(int state, TaskManager* tm) {
     }
 }
 
-void add_a_new_task(List* list)
+void get_multiple_line(char* target, char* prompt)
 {
-    printf("Please enter description for the task(no more than 50 characters).Enter \'q\' to cancel this action.\n");
-    char desc[MAXCHAR];
-    while (fgets(desc, MAXCHAR, stdin) != NULL) {
-        int len = strlen(desc);
-        if (desc[len - 1] == '\n' && len != 1) {
+    printf("%s\n", prompt);
+
+    while (fgets(target, MAXCHAR, stdin) != NULL) {
+        int len = strlen(target);
+        if (target[len - 1] == '\n' && len != 1) {
             break;
         }
     }
     // 
-    trim_backspace(desc);
+    trim_backspace(target);
+}
+
+int get_task_detail(char* title, char* desc)
+{
+    char* prompt_title = "Please enter the title for the task(no more than 50 characters).Enter \'q\' to cancel this action.";
+    get_multiple_line(title, prompt_title);
+    // check cancel 
+    if (check_cancel(title)) {
+        return 1;
+    }
+
+    char* prompt_desc = "Please enter the description for the task(no more than 100 characters).Enter \'q\' to cancel this action.";
+    get_multiple_line(desc, prompt_desc);
     // check cancel 
     if (check_cancel(desc)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void add_a_new_task(List* list)
+{
+    char title[MAXCHAR];
+    char desc[MAXCHAR];
+    if (get_task_detail(title, desc)) {
         return;
     }
+
     //create task
-    Task* new_task = create_task(desc);
+    Task* new_task = create_task(title, desc);
     push(list, new_task);
     printf("Successfully added the new task.\n");
     printf("-----------------------------------------------------------------------------------------------------------------\n");
 }
 
 
-Task* create_task(char* desc) {
+Task* create_task(char* title, char* desc) {
 
     Task* task = (Task*)malloc(sizeof(Task));
+    strcpy(task->title, title);
     strcpy(task->desc, desc);
     task->next = NULL;
     return task;
@@ -250,7 +371,7 @@ void finish_a_task(TaskManager* tm) {
         return NULL;
     }
     Task* finish = take_task_from_list(tm->unfinished, index_num);
-   
+
     if (finish != NULL) {
         push(tm->finished, finish);
         printf("Congratulations! You have just finished a task\n");
@@ -284,28 +405,28 @@ void retrace_top(List* list) {
 
 
 void delete_a_task(List* list) {
-     printf("Please enter the index number the task you wanted to delete\n");
-     int index_num;
-     scanf("%d", &index_num);
-     
-     //validation
-     if (index_num > list->count_num || index_num <= 0) {
-         printf("Invalid Index\n");
-         return 1;
-     }
+    printf("Please enter the index number the task you wanted to delete\n");
+    int index_num;
+    scanf("%d", &index_num);
 
-     //delete
-     Task* previous_task = list->head;
-     while (index_num > 1) {
-         previous_task = previous_task->next;
-         index_num--;
-     }
-     Task* target_task = previous_task->next;
-     Task* next_task = previous_task->next->next;
-     previous_task->next = next_task;
-     list->count_num--;
-     free(target_task);
-     retrace_top(list);
+    //validation
+    if (index_num > list->count_num || index_num <= 0) {
+        printf("Invalid Index\n");
+        return 1;
+    }
+
+    //delete
+    Task* previous_task = list->head;
+    while (index_num > 1) {
+        previous_task = previous_task->next;
+        index_num--;
+    }
+    Task* target_task = previous_task->next;
+    Task* next_task = previous_task->next->next;
+    previous_task->next = next_task;
+    list->count_num--;
+    free(target_task);
+    retrace_top(list);
 }
 
 void trim_backspace(char* str) {
@@ -332,42 +453,23 @@ void update_a_task(List* list) {
         return 1;
     }
 
-    printf("Please enter description for the task ( no more than 50 characters ). Enter \'q\' to cancel this action.\n");
-    // read user input
+    char title[MAXCHAR];
     char desc[MAXCHAR];
-    while (fgets(desc, MAXCHAR, stdin) != NULL) {
-        int len = strlen(desc);
-        if (desc[len - 1] == '\n' && len != 1) {
-            break;
-        }
-    }
-    //fgets(desc, MAXCHAR, stdin)
-    trim_backspace(desc);
-    // check cancel 
-    if (check_cancel(desc)) {
+    if (get_task_detail(title, desc)) {
         return;
     }
-
     //create task
-    Task* update_task = create_task(desc);
+    Task* update_task = create_task(title, desc);
     Task* deleted = take_task_from_list(list, index_num);
     free(deleted);
     push(list, update_task);
 }
 
 void search_a_task(List* list) {
-    printf("Please enter keyword to search a task. Enter \'q\' to cancel this action.\n");
+    char* prompt_search = "Please enter keyword to search a task. Enter \'q\' to cancel this action.";
     // read user input
     char desc[MAXCHAR];
-    while (fgets(desc, MAXCHAR, stdin) != NULL) {
-        int len = strlen(desc);
-        if (desc[len - 1] == '\n' && len != 1) {
-            break;
-        }
-    }
-    //fgets(desc, MAXCHAR, stdin)
-    trim_backspace(desc);
-    // check cancel 
+    get_multiple_line(desc, prompt_search);
     if (check_cancel(desc)) {
         return;
     }
@@ -397,7 +499,7 @@ Task* search_the_task(List* list, char* keyword) {
     }
     // search failed 
     return NULL;
-    
+
 }
 
 int empty(List* list) {
@@ -409,7 +511,45 @@ int empty(List* list) {
 
 void print_task(Task* task) {
     printf("###########################\n");
+    printf("%s\n", task->title);
     printf("%s\n", task->desc);
     printf("###########################\n");
 }
 
+void destroy_task_manager(TaskManager* tm) {
+    destroy_list(tm->finished);
+    destroy_list(tm->unfinished);
+    free(tm);
+}
+
+void destroy_list(List* list) {
+    Task* cur = list->head;
+    // iterate thru the whole list and free task item memory one by one
+    while (cur != NULL) {
+        Task* tmp = cur;
+        cur = cur->next;
+        free(tmp);
+    }
+    free(list);
+}
+
+void save_to_file(TaskManager* tm) {
+    FILE* fp = fopen("data.txt", "w+");
+    fprintf(fp, "0\n");
+    Task* un = tm->unfinished->head->next;
+
+    while (un != NULL) {
+        fprintf(fp, "%s\n", un->title);
+        fprintf(fp, "%s\n", un->desc);
+        un = un->next;
+    }
+    fprintf(fp, "1\n");
+    Task* fin = tm->finished->head->next;
+
+    while (fin != NULL) {
+        fprintf(fp, "%s\n", fin->title);
+        fprintf(fp, "%s\n", fin->desc);
+        fin = fin->next;
+    }
+    fclose(fp);
+}

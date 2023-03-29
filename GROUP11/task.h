@@ -5,11 +5,12 @@
 
 
 
-#define MAXCHAR 50
+#define MAXCHAR 100
 
 typedef struct Task Task;
 
 struct Task {
+    char title[MAXCHAR];
     char desc[MAXCHAR];//test description
     Task* next;
 };
