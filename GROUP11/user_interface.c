@@ -3,12 +3,24 @@
 
 
 void print_greeting() {
+    printf("-----------------------------------------------------------------------------------------------------------------\n");
     printf("Welcome to Task Manager Program\n");
 }
 
 void take_user_input(char* op)
 {
-    scanf(" %c", op);
+    while (1) {
+        scanf(" %c", op);
+        if (getchar() == '\n') {
+            break;
+        }
+        else {
+            printf("Wrong command.\n");
+            printf("-----------------------------------------------------------------------------------------------------------------\n");
+            printf("Please enter your choice again: ");
+        }
+    }
+
 }
 
 void print_menu() {
@@ -196,6 +208,7 @@ void read_from_file(TaskManager* tm) {
         // printf("%s\n", line);
         strcpy(t->title, line);
         read = getline(&line, &len, fp);
+        trim_backspace(line);
         strcpy(t->desc, line);
         push(list, t);
     }
