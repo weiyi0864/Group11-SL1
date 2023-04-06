@@ -5,6 +5,10 @@ int quit_flag;
 
 int main()
 {
+    if (!user_valiation()) {
+        return 0;
+    }
+
     quit_flag = 0;
     TaskManager* tm = init();
     print_greeting();

@@ -196,6 +196,7 @@ void read_from_file(TaskManager* tm) {
         // printf("%s\n", line);
         strcpy(t->title, line);
         read = getline(&line, &len, fp);
+        trim_backspace(line);
         strcpy(t->desc, line);
         push(list, t);
     }
